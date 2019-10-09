@@ -20,9 +20,16 @@ import core.utils as utils
 from core.config import cfg
 from core.yolov3 import YOLOV3
 
+return_elements = ["input/input_data:0", "pred_sbbox/concat_2:0", "pred_mbbox/concat_2:0", "pred_lbbox/concat_2:0"]
+pb_file         = "./yolov3_coco.pb"
+#num_classes     = 80
+#input_size      = 416
+graph           = tf.Graph()
+return_tensors  = utils.read_pb_return_tensors(graph, pb_file, return_elements)
+
 class YoloTest(object):
     def __init__(self):
-        self.input_size       = cfg.TEST.INPUT_SIZE
+        self.input_size       = 608 #cfg.TEST.INPUT_SIZE
         self.anchor_per_scale = cfg.YOLO.ANCHOR_PER_SCALE
         self.classes          = utils.read_class_names(cfg.YOLO.CLASSES)
         self.num_classes      = len(self.classes)
@@ -35,7 +42,7 @@ class YoloTest(object):
         self.write_image      = cfg.TEST.WRITE_IMAGE
         self.write_image_path = cfg.TEST.WRITE_IMAGE_PATH
         self.show_label       = cfg.TEST.SHOW_LABEL
-
+        '''
         with tf.name_scope('input'):
             self.input_data = tf.placeholder(dtype=tf.float32, name='input_data')
             self.trainable  = tf.placeholder(dtype=tf.bool,    name='trainable')
@@ -49,7 +56,8 @@ class YoloTest(object):
         self.sess  = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
         self.saver = tf.train.Saver(ema_obj.variables_to_restore())
         self.saver.restore(self.sess, self.weight_file)
-
+		'''
+        self.sess = tf.Session(graph=graph)
     def predict(self, image):
 
         org_image = np.copy(image)
@@ -57,7 +65,7 @@ class YoloTest(object):
 
         image_data = utils.image_preporcess(image, [self.input_size, self.input_size])
         image_data = image_data[np.newaxis, ...]
-
+        '''
         pred_sbbox, pred_mbbox, pred_lbbox = self.sess.run(
             [self.pred_sbbox, self.pred_mbbox, self.pred_lbbox],
             feed_dict={
@@ -65,6 +73,10 @@ class YoloTest(object):
                 self.trainable: False
             }
         )
+		'''
+        pred_sbbox, pred_mbbox, pred_lbbox = self.sess.run(
+            [return_tensors[1], return_tensors[2], return_tensors[3]],
+                    feed_dict={ return_tensors[0]: image_data})
 
         pred_bbox = np.concatenate([np.reshape(pred_sbbox, (-1, 5 + self.num_classes)),
                                     np.reshape(pred_mbbox, (-1, 5 + self.num_classes)),
@@ -103,7 +115,7 @@ class YoloTest(object):
                 num_bbox_gt = len(bboxes_gt)
                 with open(ground_truth_path, 'w') as f:
                     for i in range(num_bbox_gt):
-                        class_name = self.classes[classes_gt[i]]
+                        class_name = self.classes[classes_gt[i]-1]
                         xmin, ymin, xmax, ymax = list(map(str, bboxes_gt[i]))
                         bbox_mess = ' '.join([class_name, xmin, ymin, xmax, ymax]) + '\n'
                         f.write(bbox_mess)

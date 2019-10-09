@@ -199,8 +199,8 @@ class Dataset(object):
 
         for bbox in bboxes:
             bbox_coor = bbox[:4]
-            bbox_class_ind = bbox[4]
-
+            #bbox_class_ind = bbox[4]
+            bbox_class_ind = bbox[4] - 1
             onehot = np.zeros(self.num_classes, dtype=np.float)
             onehot[bbox_class_ind] = 1.0
             uniform_distribution = np.full(self.num_classes, 1.0 / self.num_classes)
