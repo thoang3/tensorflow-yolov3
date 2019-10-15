@@ -103,7 +103,7 @@ class YoloTest(object):
                 num_bbox_gt = len(bboxes_gt)
                 with open(ground_truth_path, 'w') as f:
                     for i in range(num_bbox_gt):
-                        class_name = self.classes[classes_gt[i]]
+                        class_name = self.classes[classes_gt[i]-1]
                         xmin, ymin, xmax, ymax = list(map(str, bboxes_gt[i]))
                         bbox_mess = ' '.join([class_name, xmin, ymin, xmax, ymax]) + '\n'
                         f.write(bbox_mess)
